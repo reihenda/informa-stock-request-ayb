@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSheets, SPREADSHEET_ID, SHEETS } from '@/lib/sheets'
+import { getSheets, SPREADSHEET_ID, SHEETS, withRetry } from '@/lib/sheets'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,12 +15,12 @@ export async function POST(req: NextRequest) {
     const sheets = await getSheets()
 
     // ── 1. Ambil data Master Article ──────────────────────
-    // Kolom baru: A=ArticleNumber, B=Description, C=Department, D=Commodity,
-    //             E=Class, F=ArticleHierarchy, G=Brand, H=Display(yes/no), I=AvgSales
-    const masterRes = await sheets.spreadsheets.values.get({
+    // A=ArticleNumber, B=Description, C=Department, D=Commodity,
+    // E=Class, F=ArticleHierarchy, G=Brand, H=Display, I=AvgSales
+    const masterRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEETS.MASTER}!A3:I`,
-    })
+    }))
 
     const masterRows = masterRes.data.values || []
 
@@ -40,36 +40,21 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const artCode        = article[0] || ''
-    const artDesc        = article[1] || ''
-    const department     = article[2] || ''
-    const commodity      = article[3] || ''
-    const artClass       = article[4] || ''
-    const brand          = article[6] || ''
-    const hasDisplay     = article[7] || ''
-    const avgSalesSheet  = parseFloat(article[8] || '0') || 0
+    const artCode       = article[0] || ''
+    const artDesc       = article[1] || ''
+    const department    = article[2] || ''
+    const commodity     = article[3] || ''
+    const artClass      = article[4] || ''
+    const brand         = article[6] || ''
+    const avgSalesSheet = parseFloat(article[8] || '0') || 0
 
-    // Gunakan Commodity sebagai category (lebih spesifik), fallback ke Department
     const category = commodity || department
 
-    const hasDisplayBool = hasDisplay.toString().toLowerCase() === 'yes'
-
-    // ── 2. Tidak ada display → pengajuan display ───────────
-    if (!hasDisplayBool) {
-      return NextResponse.json({
-        status: 'NO_DISPLAY',
-        article: { code: artCode, desc: artDesc, category, brand, department, artClass },
-        qty,
-        salesName,
-        message: `Artikel ini belum ada display. Silakan ajukan permintaan display terlebih dahulu.`,
-      })
-    }
-
-    // ── 3. Hitung avg penjualan dari Sales Data sheet ──────
-    const salesRes = await sheets.spreadsheets.values.get({
+    // ── 2. Hitung avg penjualan dari Sales Data sheet ──────
+    const salesRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEETS.SALES}!A3:E`,
-    })
+    }))
 
     const salesRows = salesRes.data.values || []
     const articleSales = salesRows
@@ -77,12 +62,11 @@ export async function POST(req: NextRequest) {
       .map((row) => parseInt(row[4]) || 0)
 
     const last3 = articleSales.slice(-3)
-    // Gunakan avg dari sales sheet; jika tidak ada data, fallback ke kolom I master
     const avgSales = last3.length > 0
       ? Math.round(last3.reduce((a, b) => a + b, 0) / last3.length)
       : avgSalesSheet
 
-    // ── 4. Tentukan status ─────────────────────────────────
+    // ── 3. Tentukan status ─────────────────────────────────
     const qtyNum = parseInt(qty)
     const isHold = qtyNum > avgSales
     const approvedQty = isHold ? avgSales : qtyNum

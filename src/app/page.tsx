@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 type CheckResult = {
-  status: 'APPROVED' | 'HOLD' | 'NO_DISPLAY' | 'NOT_FOUND'
+  status: 'APPROVED' | 'HOLD' | 'NOT_FOUND'
   message: string
   article?: { code: string; desc: string; category: string; brand: string; department?: string; artClass?: string }
   qty?: number
@@ -21,10 +21,9 @@ type Suggestion = {
 }
 
 const statusConfig = {
-  APPROVED:   { border: 'border-green-400',  bg: 'bg-green-50',   badge: 'bg-green-100 text-green-800',   label: 'APPROVED',               icon: '✓' },
-  HOLD:       { border: 'border-orange-400', bg: 'bg-orange-50',  badge: 'bg-orange-100 text-orange-800', label: 'HOLD',                   icon: '⏸' },
-  NO_DISPLAY: { border: 'border-yellow-400', bg: 'bg-yellow-50',  badge: 'bg-yellow-100 text-yellow-800', label: 'PERLU PENGAJUAN DISPLAY', icon: '⚠' },
-  NOT_FOUND:  { border: 'border-red-300',    bg: 'bg-red-50',     badge: 'bg-red-100 text-red-700',       label: 'TIDAK DITEMUKAN',        icon: '✕' },
+  APPROVED:  { border: 'border-green-400',  bg: 'bg-green-50',  badge: 'bg-green-100 text-green-800',   label: 'APPROVED',        icon: '✓' },
+  HOLD:      { border: 'border-orange-400', bg: 'bg-orange-50', badge: 'bg-orange-100 text-orange-800', label: 'HOLD',            icon: '⏸' },
+  NOT_FOUND: { border: 'border-red-300',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-700',       label: 'TIDAK DITEMUKAN', icon: '✕' },
 }
 
 export default function Home() {
@@ -145,7 +144,7 @@ export default function Home() {
   async function handleSubmit() {
     if (!result) return
     setLoading(true)
-    const endpoint = result.status === 'NO_DISPLAY' ? '/api/submit-display-request' : '/api/submit-request'
+    const endpoint = '/api/submit-request'
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -365,9 +364,7 @@ export default function Home() {
             >
               {loading
                 ? <><span className="animate-spin">↻</span> Menyimpan...</>
-                : result.status === 'NO_DISPLAY'
-                  ? 'Kirim Pengajuan Display →'
-                  : 'Konfirmasi & Simpan Request →'}
+                : 'Konfirmasi & Simpan Request →'}
             </button>
           )}
         </div>

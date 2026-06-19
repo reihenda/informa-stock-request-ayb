@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Informa Stock Request',
-  description: 'Sistem Request Stok — Informa Electronics Margonda',
+  description: 'Sistem Request Stok — Informa Electronics Ahmad Yani Bekasi',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="font-bold text-lg tracking-wide">INFORMA</div>
-              <div className="text-sm text-blue-200 hidden sm:block">Stock Request System — Margonda</div>
+              <div className="text-sm text-blue-200 hidden sm:block">Informa Electronics Ahmad Yani Bekasi</div>
             </div>
             <nav className="flex items-center gap-1">
               <a href="/" className="text-sm px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors text-blue-100 hover:text-white">

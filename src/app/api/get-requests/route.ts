@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server'
-import { getSheets, SPREADSHEET_ID, SHEETS } from '@/lib/sheets'
+import { getSheets, SPREADSHEET_ID, SHEETS, withRetry } from '@/lib/sheets'
 
 export async function GET() {
   try {
     const sheets = await getSheets()
 
     const [reqRes, dispRes] = await Promise.all([
-      sheets.spreadsheets.values.get({
+      withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `${SHEETS.REQUESTS}!A3:M`,
-      }),
-      sheets.spreadsheets.values.get({
+      })),
+      withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `${SHEETS.DISPLAY}!A3:H`,
-      }),
+      })),
     ])
 
     const VALID_STATUS = ['APPROVED', 'HOLD', 'REJECTED']

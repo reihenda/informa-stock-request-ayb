@@ -14,6 +14,7 @@ type Request = {
   catatan: string
   brand: string
   category: string
+  emailStatus: string
 }
 
 type DisplayRequest = {

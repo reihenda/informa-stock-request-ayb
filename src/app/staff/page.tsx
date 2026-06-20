@@ -252,6 +252,19 @@ export default function StaffPage() {
         ))}
       </div>
 
+      {/* Create SOF button */}
+      <a href="/staff/sof"
+        className="flex items-center justify-between w-full bg-[#2E75B6] hover:bg-[#1F4E79] text-white rounded-xl px-5 py-4 mb-5 shadow-sm transition-colors group">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">📋</span>
+          <div>
+            <p className="font-bold text-sm">Create SOF</p>
+            <p className="text-xs text-blue-200">Buat Store Order Form dari request yang diapprove</p>
+          </div>
+        </div>
+        <span className="text-blue-200 group-hover:text-white transition-colors text-lg">→</span>
+      </a>
+
       {/* Progress bar */}
       {requests.length > 0 && (
         <div className="mb-5">

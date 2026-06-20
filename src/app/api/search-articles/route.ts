@@ -12,9 +12,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const sheets = await getSheets()
+    // A=ArticleNumber, B=Description, C=Brand, D=Department, E=Commodity, F=AvgSales3Bln
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEETS.MASTER}!A3:I`,
+      range: `${SHEETS.MASTER}!A3:F`,
     })
 
     const rows = res.data.values || []
@@ -29,10 +30,9 @@ export async function GET(req: NextRequest) {
       .map(row => ({
         code:       row[0] || '',
         desc:       row[1] || '',
-        department: row[2] || '',
-        commodity:  row[3] || '',
-        brand:      row[6] || '',
-        hasDisplay: (row[7] || '').toLowerCase() === 'yes',
+        brand:      row[2] || '',
+        department: row[3] || '',
+        commodity:  row[4] || '',
       }))
 
     return NextResponse.json({ results })

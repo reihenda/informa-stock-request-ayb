@@ -15,11 +15,10 @@ export async function POST(req: NextRequest) {
     const sheets = await getSheets()
 
     // ── 1. Ambil data Master Article ──────────────────────
-    // A=ArticleNumber, B=Description, C=Department, D=Commodity,
-    // E=Class, F=ArticleHierarchy, G=Brand, H=Display, I=AvgSales
+    // A=ArticleNumber, B=Description, C=Brand, D=Department, E=Commodity, F=AvgSales3Bln
     const masterRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEETS.MASTER}!A3:I`,
+      range: `${SHEETS.MASTER}!A3:F`,
     }))
 
     const masterRows = masterRes.data.values || []
@@ -42,11 +41,10 @@ export async function POST(req: NextRequest) {
 
     const artCode       = article[0] || ''
     const artDesc       = article[1] || ''
-    const department    = article[2] || ''
-    const commodity     = article[3] || ''
-    const artClass      = article[4] || ''
-    const brand         = article[6] || ''
-    const avgSalesSheet = parseFloat(article[8] || '0') || 0
+    const brand         = article[2] || ''
+    const department    = article[3] || ''
+    const commodity     = article[4] || ''
+    const avgSalesSheet = parseFloat(article[5] || '0') || 0
 
     const category = commodity || department
 
@@ -73,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       status: isHold ? 'HOLD' : 'APPROVED',
-      article: { code: artCode, desc: artDesc, category, brand, department, artClass },
+      article: { code: artCode, desc: artDesc, category, brand, department },
       qty: qtyNum,
       avgSales,
       approvedQty,

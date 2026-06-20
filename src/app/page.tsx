@@ -17,7 +17,6 @@ type Suggestion = {
   department: string
   commodity: string
   brand: string
-  hasDisplay: boolean
 }
 
 const statusConfig = {
@@ -241,12 +240,6 @@ export default function Home() {
                       selectedIndex === i ? 'bg-blue-50' : 'hover:bg-gray-50'
                     }`}
                   >
-                    {/* Display indicator */}
-                    <span className={`shrink-0 mt-0.5 text-xs font-bold px-1.5 py-0.5 rounded ${
-                      s.hasDisplay ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {s.hasDisplay ? '✓' : '–'}
-                    </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 leading-tight">
                         {highlightMatch(s.desc, form.articleDesc)}
@@ -306,7 +299,7 @@ export default function Home() {
           >
             {loading
               ? <><span className="animate-spin">↻</span> Mengecek...</>
-              : 'Cek Artikel →'}
+              : 'Request Stock →'}
           </button>
         </form>
       )}

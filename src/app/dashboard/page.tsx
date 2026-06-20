@@ -17,38 +17,23 @@ type Request = {
   emailStatus: string
 }
 
-type DisplayRequest = {
-  timestamp: string
-  salesName: string
-  articleCode: string
-  articleDesc: string
-  category: string
-  qtyRequest: string
-  status: string
-  catatanManager: string
-}
-
 const statusBadge: Record<string, string> = {
   APPROVED: 'bg-green-100 text-green-700',
   HOLD:     'bg-orange-100 text-orange-700',
   REJECTED: 'bg-red-100 text-red-700',
-  PENDING:  'bg-yellow-100 text-yellow-700',
 }
 
 const statusIcon: Record<string, string> = {
   APPROVED: '✓',
   HOLD:     '⏸',
   REJECTED: '✕',
-  PENDING:  '⏳',
 }
 
 export default function Dashboard() {
-  const [tab, setTab] = useState<'requests' | 'display'>('requests')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [brandFilter, setBrandFilter] = useState('ALL')
   const [search, setSearch] = useState('')
   const [requests, setRequests] = useState<Request[]>([])
-  const [displayReqs, setDisplayReqs] = useState<DisplayRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -57,7 +42,6 @@ export default function Dashboard() {
     const res = await fetch('/api/get-requests')
     const d = await res.json()
     setRequests(d.requests || [])
-    setDisplayReqs(d.displayRequests || [])
     setLastUpdated(new Date())
   }
 
@@ -77,15 +61,14 @@ export default function Dashboard() {
     setSearch('')
   }
 
-  // Derived data
   const brands = useMemo(() => {
     const b = Array.from(new Set(requests.map(r => r.brand).filter(Boolean)))
     return b.sort()
   }, [requests])
 
-  const approvedCount  = useMemo(() => requests.filter(r => r.status === 'APPROVED').length, [requests])
-  const holdCount      = useMemo(() => requests.filter(r => r.status === 'HOLD').length, [requests])
-  const rejectedCount  = useMemo(() => requests.filter(r => r.status === 'REJECTED').length, [requests])
+  const approvedCount = useMemo(() => requests.filter(r => r.status === 'APPROVED').length, [requests])
+  const holdCount     = useMemo(() => requests.filter(r => r.status === 'HOLD').length, [requests])
+  const rejectedCount = useMemo(() => requests.filter(r => r.status === 'REJECTED').length, [requests])
 
   const filtered = useMemo(() => requests.filter(r => {
     const q = search.toLowerCase()
@@ -106,7 +89,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-[#1F4E79]">Dashboard Manager</h1>
+          <h1 className="text-2xl font-bold text-[#1F4E79]">Dashboard</h1>
           <p className="text-gray-500 text-sm mt-0.5">
             {lastUpdated ? `Update terakhir: ${lastUpdated.toLocaleTimeString('id-ID')}` : 'Memuat data...'}
           </p>
@@ -125,10 +108,10 @@ export default function Dashboard() {
       {!loading && (
         <div className="grid grid-cols-4 gap-2 mb-6">
           {[
-            { label: 'Total',    val: requests.length, color: 'text-[#1F4E79]',  bg: 'bg-blue-50',   onClick: () => { setTab('requests'); resetFilters() } },
-            { label: 'Approved', val: approvedCount,   color: 'text-green-600',  bg: 'bg-green-50',  onClick: () => { setTab('requests'); setStatusFilter('APPROVED'); setBrandFilter('ALL'); setSearch('') } },
-            { label: 'Hold',     val: holdCount,       color: 'text-orange-500', bg: 'bg-orange-50', onClick: () => { setTab('requests'); setStatusFilter('HOLD'); setBrandFilter('ALL'); setSearch('') } },
-            { label: 'Rejected', val: rejectedCount,   color: 'text-red-500',    bg: 'bg-red-50',    onClick: () => { setTab('requests'); setStatusFilter('REJECTED'); setBrandFilter('ALL'); setSearch('') } },
+            { label: 'Total',    val: requests.length, color: 'text-[#1F4E79]',  bg: 'bg-blue-50',   onClick: () => resetFilters() },
+            { label: 'Approved', val: approvedCount,   color: 'text-green-600',  bg: 'bg-green-50',  onClick: () => { setStatusFilter('APPROVED'); setBrandFilter('ALL'); setSearch('') } },
+            { label: 'Hold',     val: holdCount,       color: 'text-orange-500', bg: 'bg-orange-50', onClick: () => { setStatusFilter('HOLD'); setBrandFilter('ALL'); setSearch('') } },
+            { label: 'Rejected', val: rejectedCount,   color: 'text-red-500',    bg: 'bg-red-50',    onClick: () => { setStatusFilter('REJECTED'); setBrandFilter('ALL'); setSearch('') } },
           ].map(s => (
             <button key={s.label} onClick={s.onClick}
               className={`${s.bg} rounded-xl border border-gray-100 p-3 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer`}>
@@ -139,20 +122,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-5">
-        {(['requests', 'display'] as const).map(t => (
-          <button key={t} onClick={() => { setTab(t); resetFilters() }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === t ? 'bg-[#1F4E79] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}>
-            {t === 'requests'
-              ? `📋 Request Stok (${requests.length})`
-              : `🖥 Pengajuan Display (${displayReqs.length})`}
-          </button>
-        ))}
-      </div>
-
       {loading && (
         <div className="text-center py-16 text-gray-400">
           <p className="text-3xl mb-2 animate-spin inline-block">↻</p>
@@ -160,8 +129,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── REQUEST STOK TAB ── */}
-      {!loading && tab === 'requests' && (
+      {!loading && (
         <div>
           {/* Search */}
           <div className="relative mb-3">
@@ -281,38 +249,6 @@ export default function Dashboard() {
               )
             })}
           </div>
-        </div>
-      )}
-
-      {/* ── DISPLAY TAB ── */}
-      {!loading && tab === 'display' && (
-        <div className="space-y-3">
-          {displayReqs.length === 0 && (
-            <div className="text-center py-14 text-gray-400">
-              <p className="text-4xl mb-3">🖥</p>
-              <p className="text-sm">Belum ada pengajuan display</p>
-            </div>
-          )}
-          {displayReqs.map((r, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-gray-800 truncate">{r.articleDesc || r.articleCode}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{[r.articleCode, r.category].filter(Boolean).join(' · ')}</p>
-                  <p className="text-xs text-gray-400">{r.timestamp} · <span className="font-medium text-gray-600">{r.salesName}</span></p>
-                </div>
-                <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${statusBadge[r.status] || 'bg-gray-100 text-gray-600'}`}>
-                  {statusIcon[r.status] || ''} {r.status}
-                </span>
-              </div>
-              <div className="flex gap-4 text-xs bg-gray-50 rounded-lg px-3 py-2">
-                <span className="text-gray-500">Qty: <strong className="text-gray-700">{r.qtyRequest}</strong></span>
-              </div>
-              {r.catatanManager && (
-                <p className="text-xs text-blue-600 mt-2 bg-blue-50 rounded px-2.5 py-1.5">💬 {r.catatanManager}</p>
-              )}
-            </div>
-          ))}
         </div>
       )}
     </div>

@@ -114,7 +114,7 @@ export default function SOFPage() {
       const a    = document.createElement('a')
       const safeDate = isoToDisplay(date).replace(/\//g, '')
       a.href     = url
-      a.download = `SOF_${safeDate}_${sofNumber || 'draft'}.ods`
+      a.download = `SOF_${safeDate}_${sofNumber || 'draft'}.xlsx`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

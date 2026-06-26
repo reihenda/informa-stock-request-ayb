@@ -19,6 +19,12 @@ function sumRows(rows: string[][], articleCode: string): StockTotal {
   return { unrestricted, blocked }
 }
 
+// Read last-update timestamp from cell N1 of a sheet tab.
+// Convention: manager manually types "DD/MM/YYYY HH:mm" in N1 after each update.
+function extractTimestamp(values: string[][][] | undefined): string {
+  return (values?.[0]?.[0] as string | undefined)?.trim() ?? ''
+}
+
 export async function GET(req: NextRequest) {
   const article = req.nextUrl.searchParams.get('article')?.trim()
   if (!article) return NextResponse.json({ error: 'Missing article' }, { status: 400 })
@@ -26,7 +32,7 @@ export async function GET(req: NextRequest) {
   try {
     const sheets = await getSheets()
 
-    const [aybRes, cikupaRes] = await Promise.all([
+    const [aybRes, cikupaRes, aybTsRes, cikupaTsRes] = await Promise.all([
       withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: INVENTORY_SPREADSHEET_ID,
         range: 'INVENTORY AYB!A2:G',
@@ -35,14 +41,26 @@ export async function GET(req: NextRequest) {
         spreadsheetId: INVENTORY_SPREADSHEET_ID,
         range: 'INVENTORY CIKUPA!A2:G',
       })),
+      // N1 = last-update timestamp for AYB
+      withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: INVENTORY_SPREADSHEET_ID,
+        range: 'INVENTORY AYB!N1',
+      })),
+      // N1 = last-update timestamp for Cikupa
+      withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: INVENTORY_SPREADSHEET_ID,
+        range: 'INVENTORY CIKUPA!N1',
+      })),
     ])
 
     const aybRows    = (aybRes.data.values    ?? []) as string[][]
     const cikupaRows = (cikupaRes.data.values ?? []) as string[][]
 
     return NextResponse.json({
-      ayb:    sumRows(aybRows,    article),
-      cikupa: sumRows(cikupaRows, article),
+      ayb:              sumRows(aybRows,    article),
+      cikupa:           sumRows(cikupaRows, article),
+      lastUpdatedAYB:   extractTimestamp(aybTsRes.data.values    as string[][][] | undefined),
+      lastUpdatedCikupa: extractTimestamp(cikupaTsRes.data.values as string[][][] | undefined),
     })
   } catch (err) {
     console.error('[get-inventory]', err)

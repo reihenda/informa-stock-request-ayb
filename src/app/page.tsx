@@ -20,43 +20,102 @@ type Suggestion = {
 }
 
 type StockInfo = {
-  ayb:    { unrestricted: number; blocked: number }
-  cikupa: { unrestricted: number; blocked: number }
+  ayb:               { unrestricted: number; blocked: number }
+  cikupa:            { unrestricted: number; blocked: number }
+  lastUpdatedAYB?:   string
+  lastUpdatedCikupa?: string
+}
+
+// Returns today's date as "DD/MM/YYYY"
+function todayDDMMYYYY(): string {
+  const d = new Date()
+  const dd   = String(d.getDate()).padStart(2, '0')
+  const mm   = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  return `${dd}/${mm}/${yyyy}`
+}
+
+function isUpdatedToday(ts: string | undefined): boolean {
+  if (!ts) return false
+  return ts.trim().startsWith(todayDDMMYYYY())
 }
 
 function StockPanel({ stock }: { stock: StockInfo }) {
-  const cikupaEmpty = stock.cikupa.unrestricted <= 0 && stock.cikupa.blocked <= 0
+  const cikupaEmpty     = stock.cikupa.unrestricted <= 0 && stock.cikupa.blocked <= 0
+  const aybStale        = !isUpdatedToday(stock.lastUpdatedAYB)
+  const cikupaStale     = !isUpdatedToday(stock.lastUpdatedCikupa)
+  const anyStale        = aybStale || cikupaStale
 
-  function StockRow({ label, data }: { label: string; data: { unrestricted: number; blocked: number } }) {
-    return (
-      <div className="flex items-center justify-between py-2 px-3">
-        <span className="text-xs font-semibold text-gray-600">{label}</span>
-        <div className="flex items-center gap-3 text-xs">
+  return (
+    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white text-xs">
+      <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
+        <span className="font-bold text-gray-500 uppercase tracking-wide">Info Stok Saat Ini</span>
+      </div>
+
+      {/* AYB row */}
+      <div className="flex items-center justify-between px-3 py-2">
+        <div>
+          <p className="font-semibold text-gray-600">Toko AYB</p>
+          {stock.lastUpdatedAYB
+            ? <p className={`mt-0.5 ${aybStale ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                Update: {stock.lastUpdatedAYB}{aybStale ? ' ⚠' : ''}
+              </p>
+            : <p className="text-gray-400 mt-0.5 italic">Belum ada timestamp</p>
+          }
+        </div>
+        <div className="flex items-center gap-3 text-right">
           <span className="text-gray-500">
-            Unrestricted: <strong className={data.unrestricted > 0 ? 'text-green-700' : 'text-gray-400'}>{data.unrestricted}</strong>
+            Unrestricted: <strong className={stock.ayb.unrestricted > 0 ? 'text-green-700' : 'text-gray-400'}>{stock.ayb.unrestricted}</strong>
           </span>
           <span className="text-gray-300">|</span>
           <span className="text-gray-500">
-            Blocked: <strong className={data.blocked > 0 ? 'text-orange-600' : 'text-gray-400'}>{data.blocked}</strong>
+            Blocked: <strong className={stock.ayb.blocked > 0 ? 'text-orange-600' : 'text-gray-400'}>{stock.ayb.blocked}</strong>
           </span>
         </div>
       </div>
-    )
-  }
 
-  return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
-      <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Stok Saat Ini</span>
-      </div>
-      <StockRow label="Toko AYB" data={stock.ayb} />
       <div className="border-t border-gray-100" />
-      <StockRow label="DC Cikupa" data={stock.cikupa} />
-      {cikupaEmpty && (
+
+      {/* Cikupa row */}
+      <div className="flex items-center justify-between px-3 py-2">
+        <div>
+          <p className="font-semibold text-gray-600">DC Cikupa</p>
+          {stock.lastUpdatedCikupa
+            ? <p className={`mt-0.5 ${cikupaStale ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                Update: {stock.lastUpdatedCikupa}{cikupaStale ? ' ⚠' : ''}
+              </p>
+            : <p className="text-gray-400 mt-0.5 italic">Belum ada timestamp</p>
+          }
+        </div>
+        <div className="flex items-center gap-3 text-right">
+          <span className="text-gray-500">
+            Unrestricted: <strong className={stock.cikupa.unrestricted > 0 ? 'text-green-700' : 'text-gray-400'}>{stock.cikupa.unrestricted}</strong>
+          </span>
+          <span className="text-gray-300">|</span>
+          <span className="text-gray-500">
+            Blocked: <strong className={stock.cikupa.blocked > 0 ? 'text-orange-600' : 'text-gray-400'}>{stock.cikupa.blocked}</strong>
+          </span>
+        </div>
+      </div>
+
+      {/* Stale data warning — takes priority over empty stock warning */}
+      {anyStale && (
+        <div className="border-t border-red-200 bg-red-50 px-3 py-2.5 flex items-start gap-2">
+          <span className="text-red-500 shrink-0 mt-0.5">⚠</span>
+          <p className="text-red-800">
+            <strong>Data inventory belum diupdate hari ini.</strong>{' '}
+            Ingatkan manager untuk segera update data stok sebelum melanjutkan request ini.
+          </p>
+        </div>
+      )}
+
+      {/* Empty Cikupa warning (only show if data is fresh) */}
+      {!anyStale && cikupaEmpty && (
         <div className="border-t border-yellow-200 bg-yellow-50 px-3 py-2.5 flex items-start gap-2">
-          <span className="text-yellow-500 mt-0.5 shrink-0">⚠</span>
-          <p className="text-xs text-yellow-800">
-            <strong>Stok DC Cikupa saat ini kosong.</strong> Pastikan manager sudah mengupdate data stok sebelum melanjutkan request ini.
+          <span className="text-yellow-500 shrink-0 mt-0.5">⚠</span>
+          <p className="text-yellow-800">
+            <strong>Stok DC Cikupa saat ini kosong.</strong>{' '}
+            Pastikan manager sudah mengupdate data stok sebelum melanjutkan request ini.
           </p>
         </div>
       )}

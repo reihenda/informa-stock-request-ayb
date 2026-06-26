@@ -243,6 +243,19 @@ export default function ManagerPage() {
         </div>
       </div>
 
+      {/* Pareto shortcut */}
+      <a href="/manager/pareto"
+        className="flex items-center justify-between w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-5 py-4 mb-5 shadow-sm transition-colors group">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">📊</span>
+          <div>
+            <p className="font-bold text-sm">Pareto Analysis</p>
+            <p className="text-xs text-purple-200">Monitor artikel prioritas yang perlu restock di toko</p>
+          </div>
+        </div>
+        <span className="text-purple-200 group-hover:text-white transition-colors text-lg">→</span>
+      </a>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[

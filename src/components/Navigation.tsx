@@ -93,6 +93,17 @@ export default function Navigation() {
               <p className="text-xs text-gray-400">Approve / reject request HOLD</p>
             </div>
           </Link>
+
+          <Link href="/manager/pareto" onClick={() => setOpen(false)}
+            className="flex items-center gap-4 px-4 py-3.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition-colors group">
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shrink-0">
+              📊
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800 group-hover:text-[#1F4E79]">Pareto</p>
+              <p className="text-xs text-gray-400">Artikel prioritas & restock monitoring</p>
+            </div>
+          </Link>
         </div>
       </div>
     </>

@@ -1,6 +1,11 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 
+type StockInfo = {
+  ayb:    { unrestricted: number; blocked: number }
+  cikupa: { unrestricted: number; blocked: number }
+}
+
 type Request = {
   timestamp: string
   salesName: string
@@ -37,6 +42,25 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+
+  // Stock info per article — keyed by articleCode
+  const [stockMap, setStockMap]   = useState<Record<string, StockInfo>>({})
+  const [stockLoading, setStockLoading] = useState<Record<string, boolean>>({})
+  const [expandedStock, setExpandedStock] = useState<Record<string, boolean>>({})
+
+  async function toggleStock(articleCode: string) {
+    const next = !expandedStock[articleCode]
+    setExpandedStock(prev => ({ ...prev, [articleCode]: next }))
+    if (next && !stockMap[articleCode] && !stockLoading[articleCode]) {
+      setStockLoading(prev => ({ ...prev, [articleCode]: true }))
+      try {
+        const res = await fetch(`/api/get-inventory?article=${encodeURIComponent(articleCode)}`)
+        const data: StockInfo = await res.json()
+        setStockMap(prev => ({ ...prev, [articleCode]: data }))
+      } catch { /* silently fail */ }
+      setStockLoading(prev => ({ ...prev, [articleCode]: false }))
+    }
+  }
 
   async function fetchData() {
     const res = await fetch('/api/get-requests')
@@ -243,6 +267,57 @@ export default function Dashboard() {
                         ? <p className="text-xs text-red-500">Alasan: {r.catatan}</p>
                         : <p className="text-xs text-red-400 italic">Tidak ada keterangan alasan</p>
                       }
+                    </div>
+                  )}
+
+                  {/* Cek Stok toggle */}
+                  {r.articleCode && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => toggleStock(r.articleCode)}
+                        className="flex items-center gap-1.5 text-xs text-[#2E75B6] hover:underline font-medium"
+                      >
+                        <span>{expandedStock[r.articleCode] ? '▲' : '▼'}</span>
+                        {expandedStock[r.articleCode] ? 'Sembunyikan stok' : 'Cek Stok'}
+                      </button>
+
+                      {expandedStock[r.articleCode] && (
+                        <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden bg-white">
+                          {stockLoading[r.articleCode] ? (
+                            <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-gray-400">
+                              <span className="animate-spin">↻</span> Mengambil data stok...
+                            </div>
+                          ) : stockMap[r.articleCode] ? (
+                            <>
+                              {[
+                                { label: 'Toko AYB',  data: stockMap[r.articleCode].ayb    },
+                                { label: 'DC Cikupa', data: stockMap[r.articleCode].cikupa },
+                              ].map((row, j) => (
+                                <div key={row.label} className={`flex items-center justify-between px-3 py-2 ${j > 0 ? 'border-t border-gray-100' : ''}`}>
+                                  <span className="text-xs font-semibold text-gray-600">{row.label}</span>
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="text-gray-500">
+                                      Unrestricted: <strong className={row.data.unrestricted > 0 ? 'text-green-700' : 'text-gray-400'}>{row.data.unrestricted}</strong>
+                                    </span>
+                                    <span className="text-gray-300">|</span>
+                                    <span className="text-gray-500">
+                                      Blocked: <strong className={row.data.blocked > 0 ? 'text-orange-600' : 'text-gray-400'}>{row.data.blocked}</strong>
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              {stockMap[r.articleCode].cikupa.unrestricted <= 0 && stockMap[r.articleCode].cikupa.blocked <= 0 && (
+                                <div className="border-t border-yellow-200 bg-yellow-50 px-3 py-2 flex items-start gap-2">
+                                  <span className="text-yellow-500 shrink-0">⚠</span>
+                                  <p className="text-xs text-yellow-800">Stok DC Cikupa kosong. Cek apakah data stok sudah diupdate.</p>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="px-3 py-2.5 text-xs text-gray-400">Gagal mengambil data stok.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

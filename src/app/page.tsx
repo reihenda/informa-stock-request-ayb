@@ -19,6 +19,51 @@ type Suggestion = {
   brand: string
 }
 
+type StockInfo = {
+  ayb:    { unrestricted: number; blocked: number }
+  cikupa: { unrestricted: number; blocked: number }
+}
+
+function StockPanel({ stock }: { stock: StockInfo }) {
+  const cikupaEmpty = stock.cikupa.unrestricted <= 0 && stock.cikupa.blocked <= 0
+
+  function StockRow({ label, data }: { label: string; data: { unrestricted: number; blocked: number } }) {
+    return (
+      <div className="flex items-center justify-between py-2 px-3">
+        <span className="text-xs font-semibold text-gray-600">{label}</span>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-gray-500">
+            Unrestricted: <strong className={data.unrestricted > 0 ? 'text-green-700' : 'text-gray-400'}>{data.unrestricted}</strong>
+          </span>
+          <span className="text-gray-300">|</span>
+          <span className="text-gray-500">
+            Blocked: <strong className={data.blocked > 0 ? 'text-orange-600' : 'text-gray-400'}>{data.blocked}</strong>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+      <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Stok Saat Ini</span>
+      </div>
+      <StockRow label="Toko AYB" data={stock.ayb} />
+      <div className="border-t border-gray-100" />
+      <StockRow label="DC Cikupa" data={stock.cikupa} />
+      {cikupaEmpty && (
+        <div className="border-t border-yellow-200 bg-yellow-50 px-3 py-2.5 flex items-start gap-2">
+          <span className="text-yellow-500 mt-0.5 shrink-0">⚠</span>
+          <p className="text-xs text-yellow-800">
+            <strong>Stok DC Cikupa saat ini kosong.</strong> Pastikan manager sudah mengupdate data stok sebelum melanjutkan request ini.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const statusConfig = {
   APPROVED:  { border: 'border-green-400',  bg: 'bg-green-50',  badge: 'bg-green-100 text-green-800',   label: 'APPROVED',        icon: '✓' },
   HOLD:      { border: 'border-orange-400', bg: 'bg-orange-50', badge: 'bg-orange-100 text-orange-800', label: 'HOLD',            icon: '⏸' },
@@ -39,6 +84,10 @@ export default function Home() {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Inventory stock state
+  const [stock, setStock] = useState<StockInfo | null>(null)
+  const [stockLoading, setStockLoading] = useState(false)
 
   // Tutup dropdown saat klik di luar
   useEffect(() => {
@@ -76,11 +125,20 @@ export default function Home() {
     debounceRef.current = setTimeout(() => searchArticles(value), 300)
   }
 
-  function handleSelectSuggestion(s: Suggestion) {
+  async function handleSelectSuggestion(s: Suggestion) {
     setForm(f => ({ ...f, articleCode: s.code, articleDesc: s.desc }))
     setSuggestions([])
     setShowSuggestions(false)
     setSelectedIndex(-1)
+    // Fetch inventory for selected article
+    setStock(null)
+    setStockLoading(true)
+    try {
+      const res = await fetch(`/api/get-inventory?article=${encodeURIComponent(s.code)}`)
+      const data = await res.json()
+      if (!data.error) setStock(data)
+    } catch { /* non-critical, silently fail */ }
+    setStockLoading(false)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -170,6 +228,7 @@ export default function Home() {
     setSubmitMsg('')
     setSuggestions([])
     setShowSuggestions(false)
+    setStock(null)
   }
 
   const cfg = result ? statusConfig[result.status] : null
@@ -272,6 +331,19 @@ export default function Home() {
                 <span className="font-medium text-blue-700">{form.articleCode}</span>
                 <span className="text-blue-500">—</span>
                 <span className="text-blue-600 truncate">{form.articleDesc}</span>
+              </div>
+            )}
+
+            {/* Stock info panel */}
+            {form.articleCode && (stockLoading || stock) && (
+              <div className="mt-3">
+                {stockLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5">
+                    <span className="animate-spin text-base">↻</span> Mengambil data stok...
+                  </div>
+                ) : stock && (
+                  <StockPanel stock={stock} />
+                )}
               </div>
             )}
           </div>

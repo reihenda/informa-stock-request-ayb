@@ -49,7 +49,8 @@ export async function withRetry<T>(
   throw new Error('Max retries exceeded')
 }
 
-export const SPREADSHEET_ID = process.env.SPREADSHEET_ID!
+export const SPREADSHEET_ID           = process.env.SPREADSHEET_ID!
+export const INVENTORY_SPREADSHEET_ID = process.env.INVENTORY_SPREADSHEET_ID!
 
 export const SHEETS = {
   MASTER:   '1_Master_Article',

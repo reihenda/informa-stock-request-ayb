@@ -33,23 +33,23 @@ export async function GET(req: NextRequest) {
     const sheets = await getSheets()
 
     const [aybRes, cikupaRes, aybTsRes, cikupaTsRes] = await Promise.all([
+      // Data starts at row 3 (row 1 = last update row, row 2 = headers)
       withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: INVENTORY_SPREADSHEET_ID,
-        range: 'INVENTORY AYB!A2:G',
+        range: 'INVENTORY AYB!A3:G',
       })),
       withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: INVENTORY_SPREADSHEET_ID,
-        range: 'INVENTORY CIKUPA!A2:G',
+        range: 'INVENTORY CIKUPA!A3:G',
       })),
-      // N1 = last-update timestamp for AYB
+      // B1 = last-update date typed by manager
       withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: INVENTORY_SPREADSHEET_ID,
-        range: 'INVENTORY AYB!N1',
+        range: 'INVENTORY AYB!B1',
       })),
-      // N1 = last-update timestamp for Cikupa
       withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: INVENTORY_SPREADSHEET_ID,
-        range: 'INVENTORY CIKUPA!N1',
+        range: 'INVENTORY CIKUPA!B1',
       })),
     ])
 

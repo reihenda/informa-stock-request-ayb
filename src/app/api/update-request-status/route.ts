@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { rowNumber, newStatus, catatan } = await req.json()
+  const { rowNumber, newStatus, catatan, qtyApproved } = await req.json()
 
   if (!rowNumber || !['APPROVED', 'REJECTED'].includes(newStatus)) {
     return NextResponse.json({ error: 'Data tidak valid' }, { status: 400 })
@@ -20,21 +20,28 @@ export async function POST(req: NextRequest) {
   try {
     const sheets = await getSheets()
 
-    // Update H = status, I = catatan
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEETS.REQUESTS}!H${rowNumber}:I${rowNumber}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[newStatus, catatan || '']] },
-    })
-
-    // Jika APPROVED → set email_status = BELUM di kolom M
     if (newStatus === 'APPROVED') {
+      // Update G = qtyApproved, H = status, I = '' (clear alasan)
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEETS.REQUESTS}!G${rowNumber}:I${rowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[qtyApproved ?? '', 'APPROVED', '']] },
+      })
+      // Set email_status = BELUM di kolom M
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
         range: `${SHEETS.REQUESTS}!M${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [['BELUM']] },
+      })
+    } else {
+      // REJECTED: update H = status, I = alasan penolakan
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEETS.REQUESTS}!H${rowNumber}:I${rowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [['REJECTED', catatan || '']] },
       })
     }
 

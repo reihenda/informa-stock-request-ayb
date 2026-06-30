@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSheets, SPREADSHEET_ID, SHEETS, withRetry } from '@/lib/sheets'
+import { getSheets, SPREADSHEET_ID, SALES_SPREADSHEET_ID, SHEETS, withRetry } from '@/lib/sheets'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const sheets = await getSheets()
 
-    const [reqRes, dispRes] = await Promise.all([
+    const [reqRes, dispRes, paretoRes] = await Promise.all([
       withRetry(() => sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `${SHEETS.REQUESTS}!A3:M`,
@@ -16,7 +16,18 @@ export async function GET() {
         spreadsheetId: SPREADSHEET_ID,
         range: `${SHEETS.DISPLAY}!A3:H`,
       })),
+      withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: SALES_SPREADSHEET_ID,
+        range: 'PARETO!A2:B',
+      })),
     ])
+
+    // Build pareto map: article code → class
+    const paretoMap = new Map<string, string>()
+    for (const row of (paretoRes.data.values ?? []) as string[][]) {
+      const code = String(row[0] ?? '').trim()
+      if (code) paretoMap.set(code, String(row[1] ?? '').trim().toUpperCase())
+    }
 
     const VALID_STATUS = ['APPROVED', 'HOLD', 'REJECTED']
 
@@ -35,6 +46,7 @@ export async function GET() {
         brand:       r[10] || '',
         category:    r[11] || '',
         emailStatus: r[12] || '',   // kolom M: BELUM / SUDAH
+        pareto:      paretoMap.get(String(r[2] ?? '').trim()) || '',
         _rowNumber:  i + 3,
       }))
       .filter(r => r.timestamp && r.salesName && VALID_STATUS.includes(r.status))

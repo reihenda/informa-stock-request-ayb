@@ -45,6 +45,8 @@ export default function ManagerPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [rejectModal, setRejectModal] = useState<{ rowNumber: number; desc: string } | null>(null)
   const [rejectNote, setRejectNote] = useState('')
+  const [approveModal, setApproveModal] = useState<{ rowNumber: number; desc: string; defaultQty: string } | null>(null)
+  const [approveQty, setApproveQty] = useState('')
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   // Filter state (tab "all")
@@ -109,13 +111,13 @@ export default function ManagerPage() {
     setPassword('')
   }
 
-  async function handleUpdateStatus(rowNumber: number, newStatus: 'APPROVED' | 'REJECTED', catatan = '') {
+  async function handleUpdateStatus(rowNumber: number, newStatus: 'APPROVED' | 'REJECTED', catatan = '', qtyApproved?: string) {
     setActionLoading(rowNumber)
     try {
       const res = await fetch('/api/update-request-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rowNumber, newStatus, catatan }),
+        body: JSON.stringify({ rowNumber, newStatus, catatan, qtyApproved }),
       })
       if (res.ok) {
         showToast(`Request berhasil di-${newStatus === 'APPROVED' ? 'approve' : 'reject'}`, 'success')
@@ -129,6 +131,8 @@ export default function ManagerPage() {
     setActionLoading(null)
     setRejectModal(null)
     setRejectNote('')
+    setApproveModal(null)
+    setApproveQty('')
   }
 
   // Derived
@@ -347,7 +351,7 @@ export default function ManagerPage() {
                 {/* Action buttons */}
                 <div className="flex gap-2 mt-1">
                   <button
-                    onClick={() => handleUpdateStatus(r._rowNumber, 'APPROVED')}
+                    onClick={() => { setApproveModal({ rowNumber: r._rowNumber, desc: r.articleDesc || r.articleCode, defaultQty: r.qtyApproved }); setApproveQty(r.qtyApproved) }}
                     disabled={actionLoading !== null}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
@@ -434,6 +438,54 @@ export default function ManagerPage() {
                 {r.catatan && <p className="text-xs text-blue-600 mt-1 bg-blue-50 rounded px-2.5 py-1.5">💬 {r.catatan}</p>}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Approve Modal ── */}
+      {approveModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="p-6">
+              <h3 className="font-bold text-gray-800 text-lg mb-1">Konfirmasi Approve</h3>
+              <p className="text-sm text-gray-500 mb-4 leading-relaxed">{approveModal.desc}</p>
+
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Qty yang Disetujui
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  autoFocus
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Masukkan qty yang disetujui..."
+                  value={approveQty}
+                  onChange={e => setApproveQty(e.target.value)}
+                />
+                {approveModal.defaultQty && approveQty !== approveModal.defaultQty && (
+                  <p className="text-xs text-orange-500 mt-1.5">
+                    Qty awal dari sistem: <strong>{approveModal.defaultQty}</strong>
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setApproveModal(null); setApproveQty('') }}
+                  className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => handleUpdateStatus(approveModal.rowNumber, 'APPROVED', '', approveQty)}
+                  disabled={actionLoading !== null || !approveQty || Number(approveQty) <= 0}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {actionLoading !== null ? '...' : '✓ Approve'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
